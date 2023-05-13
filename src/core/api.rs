@@ -294,11 +294,22 @@ macro_rules! declare_rpsl_entry {
 pub const ENTRY_TABLE_NAME: &str = "rpsl_M_entry_tbl";
 pub const MODULE_ID_NAME: &str = "rpsl_M_module_id";
 
-pub type PfnRpslDynLibInit = ffi::PFN_rpslDynLibInit;
+pub type PfnRpslDynLibInit = unsafe extern "C" fn(pProcs: *const ffi::___rpsl_runtime_procs, sizeofProcs: u32) -> i32;
 
 #[inline]
 pub unsafe fn rpsl_dynamic_library_init(pfn_dyn_lib_init: PfnRpslDynLibInit) -> RpsResult<()> {
-    result_from_ffi(ffi::rpsRpslDynamicLibraryInit(pfn_dyn_lib_init))
+    result_from_ffi(ffi::rpsRpslDynamicLibraryInit(Some(pfn_dyn_lib_init)))
+}
+
+#[inline]
+pub unsafe fn load_dynamic_library_and_get_entry_point(library: &libloading::Library, entry_name: &str) -> RpsResult<RpslEntry> {
+    let symbol: libloading::Symbol<PfnRpslDynLibInit> = library.get(b"___rps_dyn_lib_init").unwrap();
+
+    rpsl_dynamic_library_init(*symbol)?;
+
+    let entry: libloading::Symbol<*const RpslEntry> = library.get(entry_name.as_bytes()).unwrap();
+
+    Ok(**entry)
 }
 
 #[inline]

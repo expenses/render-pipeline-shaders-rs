@@ -68,66 +68,17 @@ fn main() {
     #[cfg(feature = "d3d12")]
     panic!("Feature D3D12 is not supported at the moment");
 
-    let mut build = cc::Build::new();
-    build
-        .cpp(true)
-        .include("vendor/Vulkan-Headers/include")
-        .include("vendor/RenderPipelineShaders/include")
-        .include("vendor/RenderPipelineShaders/src")
-        .file("vendor/RenderPipelineShaders/src/core/rps_core.cpp")
-        .file("vendor/RenderPipelineShaders/src/core/rps_device.cpp")
-        .file("vendor/RenderPipelineShaders/src/core/rps_graph.cpp")
-        .file("vendor/RenderPipelineShaders/src/core/rps_result.cpp")
-        .file("vendor/RenderPipelineShaders/src/frontend/rps_builder.cpp")
-        .file("vendor/RenderPipelineShaders/src/runtime/common/rps_access.cpp")
-        .file("vendor/RenderPipelineShaders/src/runtime/common/rps_format.cpp")
-        .file("vendor/RenderPipelineShaders/src/runtime/common/rps_null_runtime_backend.cpp")
-        .file("vendor/RenderPipelineShaders/src/runtime/common/rps_null_runtime_device.cpp")
-        .file("vendor/RenderPipelineShaders/src/runtime/common/rps_render_graph.cpp")
-        .file("vendor/RenderPipelineShaders/src/runtime/common/rps_render_graph_builder.cpp")
-        .file("vendor/RenderPipelineShaders/src/runtime/common/rps_render_graph_diagnostics.cpp")
-        .file("vendor/RenderPipelineShaders/src/runtime/common/rps_rpsl_host.cpp")
-        .file("vendor/RenderPipelineShaders/src/runtime/common/rps_runtime_backend.cpp")
-        .file("vendor/RenderPipelineShaders/src/runtime/common/rps_runtime_device.cpp")
-        .file("vendor/RenderPipelineShaders/src/runtime/common/rps_subprogram.cpp");
+    let out_dir = cmake::Config::new("vendor/RenderPipelineShaders")
+        .build_target("all")
+        .define("RpsEnableVulkan", "ON")
+        .build()
+        .join("build")
+        .join("src");
 
-    let target = env::var("TARGET").unwrap();
-
-    if target.contains("gnu") || target.contains("darwin") {
-        build
-            .flag("-std=c++17")
-            .flag("-Wno-missing-field-initializers")
-            .flag("-Wno-sign-compare")
-            .flag("-Wno-unused-function")
-            .flag("-Wno-unused-parameter")
-            .flag("-Wno-unused-but-set-variable")
-            .flag("-Wno-unused-private-field")
-            .flag("-Wno-unused-variable")
-            .flag("-Wno-extra");
-    } else if target.contains("msvc") {
-        build
-            .flag("/wd4100")
-            .flag("/wd4189")
-            .flag("/wd4201")
-            .flag("/wd4244")
-            .flag("/wd4389")
-            .flag("/wd4463")
-            .flag("/wd4205")
-            .flag("/wd4505");
-    }
-
-    #[cfg(feature = "vulkan")]
-    {
-        build
-            .define("RPS_VK_RUNTIME", "1")
-            .define("RPS_VK_DYNAMIC_LOADING", "1")
-            .file("vendor/RenderPipelineShaders/src/runtime/vk/rps_vk_built_in_nodes.cpp")
-            .file("vendor/RenderPipelineShaders/src/runtime/vk/rps_vk_formats.cpp")
-            .file("vendor/RenderPipelineShaders/src/runtime/vk/rps_vk_runtime_backend.cpp")
-            .file("vendor/RenderPipelineShaders/src/runtime/vk/rps_vk_runtime_device.cpp");
-    }
-
-    build.cpp(true).compile("render_pipeline_shaders_sys_cc");
+    println!("cargo:rustc-link-search={}", out_dir.display());
+    println!("cargo:rustc-link-lib=rps_runtime");
+    println!("cargo:rustc-link-lib=rps_core");
+    println!("cargo:rustc-link-lib=stdc++");
 
     generate_bindings();
 }
