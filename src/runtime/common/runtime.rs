@@ -566,6 +566,12 @@ pub struct RenderGraphBatchLayout {
     pub wait_fence_indices: *const u32
 }
 
+impl RenderGraphBatchLayout {
+    pub unsafe fn cmd_batches(&self) -> &[CommandBatch] {
+        std::slice::from_raw_parts(self.cmd_batches, self.num_cmd_batches as usize)
+    }
+}
+
 impl Default for RenderGraphBatchLayout {
     #[inline]
     fn default() -> Self {

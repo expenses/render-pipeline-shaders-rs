@@ -152,7 +152,7 @@ impl Default for ResourceBufferImageDesc {
 #[repr(C)]
 #[derive(Clone, Copy, Default)]
 pub struct ResourceDesc {
-    pub type_: ResourceType,
+    pub ty: ResourceType,
     pub temporal_layers: u32,
     pub flags: ResourceFlags,
     pub buffer_image: ResourceBufferImageDesc
